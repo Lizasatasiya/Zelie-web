@@ -92,13 +92,20 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
             {
               customer_name: `${firstName} ${lastName}`,
               email,
-              payment_id: response.razorpay_payment_id,
+              mobile,
+              address,
+              city,
+              state,
+              postalCode,
+              country,
+              paymentId: response.razorpay_payment_id,
               order_summary: productDetails,
               total: `₹${finalTotal.toLocaleString()}`,
-              shipping_address: `${address}, ${city}, ${state}, ${postalCode}, ${country}`,
+              createdAt: new Date().toLocaleString(),
             },
             'D0X0CFJnVlt3w3spQ'
           );
+          
 
           showPopup('✅ Payment successful and confirmation email sent!');
           onOrderComplete();
