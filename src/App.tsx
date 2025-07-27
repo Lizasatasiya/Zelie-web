@@ -7,16 +7,16 @@ import ProductModal from './components/ProductModal';
 import Cart from './components/Cart';
 import Checkout from './components/Checkout';
 import Footer from './components/Footer';
-import { Product, CartItem } from './types';
-import { getProductImages } from './utils/getProductImages';
 import Wishlist from './components/Wishlist';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Orders from './pages/Order';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PopupProvider, usePopup } from './contexts/PopupContext';
+import { Product, CartItem } from './types';
+import { getProductImages } from './utils/getProductImages';
+import PopupMessage from './components/PopupMessage'; // Optional if you modularized it
 
-
-// Sample product data
 const sampleProducts: Product[] = [
   {
     id: 1,
@@ -115,13 +115,14 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showAddToCartMessage, setShowAddToCartMessage] = useState(false);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
   const [wishlist, setWishlist] = useState<string[]>(() => {
     const stored = localStorage.getItem("wishlist");
     return stored ? JSON.parse(stored) : [];
   });
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { showPopup } = usePopup();
 
   const toggleWishlist = (productId: string) => {
     const updated = wishlist.includes(productId)
@@ -173,7 +174,7 @@ function AppContent() {
 
   const handleCheckout = () => {
     if (!user) {
-      alert("Please log in to proceed to checkout.");
+      showPopup("Please register or log in to proceed to checkout.");
       navigate('/login');
       return;
     }
@@ -184,7 +185,7 @@ function AppContent() {
   const handleOrderComplete = () => {
     setCartItems([]);
     setShowCheckout(false);
-    alert('Order placed successfully! Thank you for shopping with Zelie.');
+    showPopup("✅ Order placed successfully! Thank you for shopping with Zelie.");
   };
 
   const filteredProducts = sampleProducts.filter(product => {
@@ -213,24 +214,21 @@ function AppContent() {
       />
 
       <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <Hero />
-              <ProductGrid
-                products={filteredProducts}
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                onProductClick={setSelectedProduct}
-                onAddToCart={addToCart}
-                wishlist={wishlist}
-                toggleWishlist={toggleWishlist}
-              />
-            </>
-          }
-        />
+        <Route path="/" element={
+          <>
+            <Hero />
+            <ProductGrid
+              products={filteredProducts}
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              onProductClick={setSelectedProduct}
+              onAddToCart={addToCart}
+              wishlist={wishlist}
+              toggleWishlist={toggleWishlist}
+            />
+          </>
+        } />
         <Route path="/wishlist" element={
           <Wishlist
             wishlist={wishlist}
@@ -248,7 +246,7 @@ function AppContent() {
       <Footer />
 
       {showAddToCartMessage && (
-        <div className="fixed bottom-6 right-6 bg-[#503e28] text-white px-4 py-2 rounded shadow-lg z-50 animate-fade-in-out">
+        <div className="fixed bottom-6 right-6 bg-[#503e28] text-white px-4 py-2 rounded shadow-lg z-50">
           ✅ Added to cart!
         </div>
       )}
@@ -282,6 +280,9 @@ function AppContent() {
           onOrderComplete={handleOrderComplete}
         />
       )}
+
+      {/* Global Popup message from context */}
+      <PopupMessage />
     </div>
   );
 }
@@ -289,9 +290,11 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <PopupProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </PopupProvider>
     </AuthProvider>
   );
 }

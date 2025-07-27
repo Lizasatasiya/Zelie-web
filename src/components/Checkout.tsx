@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import emailjs from 'emailjs-com';
+import { usePopup } from '../contexts/PopupContext';
 
 interface CheckoutProps {
   items: CartItem[];
@@ -28,9 +29,10 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
 
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuth();
+  const { showPopup } = usePopup();
 
   const shipping = totalPrice >= 599 ? 0 : 50;
-  const finalTotal = totalPrice //+ shipping;
+  const finalTotal = totalPrice; // not adding shipping
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -48,7 +50,12 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     const { mobile, firstName, lastName, address, city, state, postalCode, country, email } = form;
 
     if (!/^\d{10}$/.test(mobile) || !firstName || !lastName || !address || !city || !state || !postalCode || !country) {
-      alert('Please fill all fields correctly.');
+      showPopup('⚠️ Please fill all fields correctly.');
+      return;
+    }
+
+    if (!user) {
+      showPopup('❌ Please log in first.');
       return;
     }
 
@@ -61,16 +68,12 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
       name: 'ZeLie',
       description: 'Order Payment',
       handler: async function (response: any) {
-        if (!user) return alert('User not logged in.');
-
         const productDetails = items.map((item) =>
           `• ${item.product.name} (ID: ${item.product.id}) — ₹${item.product.price} × ${item.quantity}`
         ).join('\n');
 
         try {
-          // 1. Store order in Firestore
-          const orderRef = collection(db, 'users', user.uid, 'orders');
-          await addDoc(orderRef, {
+          await addDoc(collection(db, 'users', user.uid, 'orders'), {
             items: items.map((item) => ({
               id: item.product.id,
               name: item.product.name,
@@ -83,26 +86,25 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
             paymentId: response.razorpay_payment_id,
           });
 
-          // 2. Send Email using EmailJS
           await emailjs.send(
-            'service_g2k5w9s',        // ✅ Your EmailJS Service ID
-            'template_azqrd6r',        // ✅ Your EmailJS Template ID
+            'service_g2k5w9s',
+            'template_azqrd6r',
             {
               customer_name: `${firstName} ${lastName}`,
-              email: email,
+              email,
               payment_id: response.razorpay_payment_id,
               order_summary: productDetails,
               total: `₹${finalTotal.toLocaleString()}`,
               shipping_address: `${address}, ${city}, ${state}, ${postalCode}, ${country}`,
             },
-            'D0X0CFJnVlt3w3spQ'           // ✅ Your EmailJS Public Key (User ID)
+            'D0X0CFJnVlt3w3spQ'
           );
 
-          alert('Payment successful and confirmation email sent!');
+          showPopup('✅ Payment successful and confirmation email sent!');
           onOrderComplete();
         } catch (error) {
-          console.error('Error saving order or sending email:', error);
-          alert('Payment succeeded but failed to save order or send email.');
+          console.error('Error:', error);
+          showPopup('⚠️ Payment succeeded, but saving order or sending email failed.');
         }
       },
       prefill: {
@@ -151,7 +153,6 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Form */}
             <form className="space-y-6">
               <div>
                 <h3 className="font-semibold mb-4">Contact Information</h3>
@@ -189,7 +190,6 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
               </div>
             </form>
 
-            {/* Right: Order Summary */}
             <div>
               <h3 className="font-semibold mb-4">Order Summary</h3>
               <div className="bg-gray-50 p-6 rounded-lg space-y-4">
