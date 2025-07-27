@@ -30,7 +30,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
   const { user } = useAuth();
 
   const shipping = totalPrice >= 599 ? 0 : 50;
-  const finalTotal = totalPrice + shipping;
+  const finalTotal = totalPrice //+ shipping;
 
   useEffect(() => {
     const script = document.createElement('script');
