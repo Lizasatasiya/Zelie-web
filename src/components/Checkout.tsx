@@ -1,6 +1,10 @@
+// src/components/Checkout.tsx
 import React, { useState, useEffect } from 'react';
 import { X, Lock } from 'lucide-react';
 import { CartItem, CheckoutForm } from '../types';
+import { db } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface CheckoutProps {
   items: CartItem[];
@@ -10,7 +14,7 @@ interface CheckoutProps {
 }
 
 const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrderComplete }) => {
-  const [form, setForm] = useState<Omit<CheckoutForm, 'paymentMethod' | 'cardNumber' | 'expiryDate' | 'cvv'>>({
+  const [form, setForm] = useState<Omit<CheckoutForm, 'paymentMethod'>>({
     email: '',
     mobile: '',
     firstName: '',
@@ -18,19 +22,15 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     address: '',
     city: '',
     postalCode: '',
-    state:'',
+    state: '',
     country: '',
   });
 
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
+  const { user } = useAuth();
 
   const shipping = totalPrice >= 599 ? 0 : 50;
-  const finalTotal = totalPrice + shipping;
+  const finalTotal = totalPrice //+ shipping;
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -39,16 +39,15 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     document.body.appendChild(script);
   }, []);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleRazorpayPayment = async () => {
     const { mobile, firstName, lastName, address, city, state, postalCode, country } = form;
-    
-    // ✅ Manual check before Razorpay opens
-    if (
-      !/^\d{10}$/.test(mobile) ||
-      !firstName.trim() || !lastName.trim() ||
-      !address.trim() || !city.trim() || !state.trim() ||
-      !postalCode.trim() || !country
-    ) {
+
+    if (!/^\d{10}$/.test(mobile) || !firstName || !lastName || !address || !city || !state || !postalCode || !country) {
       alert('Please fill all fields correctly.');
       return;
     }
@@ -56,38 +55,53 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     setIsProcessing(true);
 
     const options = {
-      key: "rzp_live_Oc8CdvKp6codkl", // ✅ Your test key
-      amount: finalTotal * 100, // in paise
+      key: 'rzp_live_Oc8CdvKp6codkl', // Replace with your Razorpay key
+      amount: finalTotal * 100,
       currency: 'INR',
       name: 'ZeLie',
       description: 'Order Payment',
-      handler: function (response: any) {
-        console.log('Razorpay Payment ID:', response.razorpay_payment_id);
-        alert('Payment successful!');
-        onOrderComplete();
+      handler: async function (response: any) {
+        if (!user) return alert('User not logged in.');
+
+        try {
+          const orderRef = collection(db, 'users', user.uid, 'orders');
+          await addDoc(orderRef, {
+            items: items.map((item) => ({
+              id: item.product.id,
+              name: item.product.name,
+              price: item.product.price,
+              quantity: item.quantity,
+            })),
+            total: finalTotal,
+            createdAt: serverTimestamp(),
+            shippingAddress: { ...form },
+            paymentId: response.razorpay_payment_id,
+          });
+
+          alert('Payment successful and order saved!');
+          onOrderComplete();
+        } catch (error) {
+          console.error('Error saving order:', error);
+          alert('Payment succeeded but failed to save order.');
+        }
       },
       prefill: {
         name: `${firstName} ${lastName}`,
-        contact: form.mobile,
-        email: form.email, // Optional but recommended
+        contact: mobile,
+        email: form.email,
       },
-    
       notes: {
-        address: form.address,     // Collect via form
-        city: form.city,
-        state: form.state,
-        pincode: form.postalCode,
-        
+        address,
+        city,
+        state,
+        pincode: postalCode,
+        country,
       },
-    
-      theme: {
-        color: '#503e28',
-      },
+      theme: { color: '#503e28' },
     };
 
     const rzp = new (window as any).Razorpay(options);
     rzp.open();
-
     setIsProcessing(false);
   };
 
@@ -95,187 +109,80 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Checkout</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Checkout</h2>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
               <X className="w-6 h-6" />
             </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Form */}
-            <div>
-              <form className="space-y-6">
+            {/* Left: Form */}
+            <form className="space-y-6">
               <div>
-  <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <h3 className="font-semibold mb-4">Contact Information</h3>
+                <input type="tel" name="mobile" placeholder="Mobile number" value={form.mobile}
+                  onChange={handleInputChange} required maxLength={10}
+                  className="w-full mb-4 px-4 py-3 border rounded-lg" />
+                <input type="email" name="email" placeholder="Email" value={form.email}
+                  onChange={handleInputChange} required
+                  className="w-full px-4 py-3 border rounded-lg" />
+              </div>
 
-  <div className="mb-4">
-    <input
-      type="tel"
-      name="mobile"
-      placeholder="Mobile number"
-      value={form.mobile}
-      onChange={handleInputChange}
-      required
-      pattern="[0-9]{10}"
-      inputMode="numeric"
-      maxLength={10}
-      title="Enter a valid 10-digit mobile number"
-      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28] focus:border-transparent"
-    />
-  </div>
-
-  <div>
-  <input
-  type="email"
-  name="email"
-  placeholder="Email"
-  value={form.email}
-  onChange={handleInputChange}
-  required
-  pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-  title="Enter a valid email address (e.g., example@email.com)"
-  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28] focus:border-transparent"
-/>
-
-  </div>
-</div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Shipping Address</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      name="firstName"
-                      placeholder="First name"
-                      value={form.firstName}
-                      onChange={handleInputChange}
-                      required
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
-                    />
-                    <input
-                      type="text"
-                      name="lastName"
-                      placeholder="Last name"
-                      value={form.lastName}
-                      onChange={handleInputChange}
-                      required
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
-                    />
-                    <input
-                      type="text"
-                      name="address"
-                      placeholder="Address"
-                      value={form.address}
-                      onChange={handleInputChange}
-                      required
-                      className="md:col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
-                    />
-                    <input
-                      type="text"
-                      name="city"
-                      placeholder="City"
-                      value={form.city}
-                      onChange={handleInputChange}
-                      required
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
-                    />
-                    <input
-                      type="text"
-                      name="state"
-                      placeholder="State"
-                      value={form.state}
-                      onChange={handleInputChange}
-                      required
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
-                    />
-                    <input
-                      type="text"
-                      name="postalCode"
-                      placeholder="Postal code"
-                      value={form.postalCode}
-                      onChange={handleInputChange}
-                      required
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
-                    />
-                    <select
-                      name="country"
-                      value={form.country}
-                      onChange={handleInputChange}
-                      required
-                      className="md:col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
-                    >
-                      <option value="">Select country</option>
-                      <option value="IN">India</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment</h3>
-                  <button
-                    type="button"
-                    onClick={handleRazorpayPayment}
-                    disabled={isProcessing}
-                    className="w-full bg-[#503e28] text-white py-4 px-6 rounded-lg font-semibold hover:bg-[#3d2f1f] transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Lock className="w-5 h-5" />
-                    <span>{isProcessing ? 'Processing...' : `Pay Now - ₹${finalTotal.toLocaleString()}`}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Order Summary */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h3>
-              <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item.product.id} className="flex items-center space-x-3">
-                      <img
-                        src={item.product.images[0]}
-                        alt={item.product.name}
-                        className="w-12 h-12 object-cover rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-gray-900">{item.product.name}</p>
-                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                      </div>
-                      <p className="font-medium text-gray-900">
-                        ₹{(item.product.price * item.quantity).toLocaleString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-gray-200 pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>₹{totalPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Shipping</span>
-                    <span>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold text-lg border-t border-gray-200 pt-2">
-                    <span>Total</span>
-                    <span>₹{finalTotal.toLocaleString()}</span>
-                  </div>
+              <div>
+                <h3 className="font-semibold mb-4">Shipping Address</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input name="firstName" placeholder="First name" value={form.firstName} onChange={handleInputChange} required className="px-4 py-3 border rounded-lg" />
+                  <input name="lastName" placeholder="Last name" value={form.lastName} onChange={handleInputChange} required className="px-4 py-3 border rounded-lg" />
+                  <input name="address" placeholder="Address" value={form.address} onChange={handleInputChange} required className="md:col-span-2 px-4 py-3 border rounded-lg" />
+                  <input name="city" placeholder="City" value={form.city} onChange={handleInputChange} required className="px-4 py-3 border rounded-lg" />
+                  <input name="state" placeholder="State" value={form.state} onChange={handleInputChange} required className="px-4 py-3 border rounded-lg" />
+                  <input name="postalCode" placeholder="Postal code" value={form.postalCode} onChange={handleInputChange} required className="px-4 py-3 border rounded-lg" />
+                  <select name="country" value={form.country} onChange={handleInputChange} required className="md:col-span-2 px-4 py-3 border rounded-lg">
+                    <option value="">Select country</option>
+                    <option value="IN">India</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Lock className="w-5 h-5 text-green-600" />
-                  <span className="text-sm text-green-800 font-medium">
-                    Your payment is secure and encrypted
-                  </span>
+              <div>
+                <h3 className="font-semibold mb-4">Payment</h3>
+                <button
+                  type="button"
+                  onClick={handleRazorpayPayment}
+                  disabled={isProcessing}
+                  className="w-full bg-[#503e28] text-white py-4 px-6 rounded-lg hover:bg-[#3d2f1f] disabled:opacity-50"
+                >
+                  <Lock className="w-5 h-5 inline-block mr-2" />
+                  {isProcessing ? 'Processing...' : `Pay Now - ₹${finalTotal.toLocaleString()}`}
+                </button>
+              </div>
+            </form>
+
+            {/* Right: Order Summary */}
+            <div>
+              <h3 className="font-semibold mb-4">Order Summary</h3>
+              <div className="bg-gray-50 p-6 rounded-lg space-y-4">
+                {items.map((item) => (
+                  <div key={item.product.id} className="flex items-center space-x-3">
+                    <img src={item.product.images[0]} alt={item.product.name} className="w-12 h-12 rounded-lg" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{item.product.name}</p>
+                      <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                    </div>
+                    <p className="text-sm font-semibold">₹{(item.product.price * item.quantity).toLocaleString()}</p>
+                  </div>
+                ))}
+                <div className="border-t pt-4 space-y-2 text-sm">
+                  <div className="flex justify-between"><span>Subtotal</span><span>₹{totalPrice.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span></div>
+                  <div className="flex justify-between font-semibold text-lg"><span>Total</span><span>₹{finalTotal.toLocaleString()}</span></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </div>  
     </div>
   );
 };

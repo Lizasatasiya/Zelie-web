@@ -21,7 +21,7 @@ const sampleProducts: Product[] = [
   {
     id: 1,
     name: "Ishq Mini",
-    price: 299,
+    price: 1,
     originalPrice: 349,
     images: getProductImages("IshqMini"),
     description: "💖 IshqMini – Where Love Lives in the Little Things",
