@@ -14,9 +14,20 @@ const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
     } catch (error: any) {
-      alert(error.message);
+      if (error.code === 'auth/user-not-found') {
+        if (confirm('No user found with this email. Would you like to register instead?')) {
+          navigate('/register');
+        }
+      } else if (error.code === 'auth/wrong-password') {
+        alert('Incorrect password. Please try again.');
+      } else if (error.code === 'auth/invalid-email') {
+        alert('Invalid email format.');
+      } else {
+        alert(error.message);
+      }
     }
   };
+  
 
   return (
     <div className="max-w-md mx-auto p-6 bg-white border shadow-md rounded">
