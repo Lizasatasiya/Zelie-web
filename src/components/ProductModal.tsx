@@ -126,10 +126,22 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onAddToCa
 
               {/* Price */}
               <div className="py-4">
-                <span className="text-4xl font-light text-[#503e28] tracking-wide">
-                  ₹{product.price.toLocaleString()}
-                </span>
-              </div>
+  {product.originalPrice && product.originalPrice > product.price ? (
+    <div className="flex items-center space-x-4">
+      <span className="text-2xl text-gray-400 line-through">
+        ₹{product.originalPrice.toLocaleString()}
+      </span>
+      <span className="text-4xl font-light text-[#503e28] tracking-wide">
+        ₹{product.price.toLocaleString()}
+      </span>
+    </div>
+  ) : (
+    <span className="text-4xl font-light text-[#503e28] tracking-wide">
+      ₹{product.price.toLocaleString()}
+    </span>
+  )}
+</div>
+
 
               {/* Quantity Selector */}
               <div className="space-y-4">

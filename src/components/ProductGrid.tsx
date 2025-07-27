@@ -166,9 +166,21 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                       {product.name}
                     </h3>
                     
-                    <p className="text-xl font-light text-[#503e28] tracking-wide">
-                     ₹{product.price.toLocaleString()}
-                    </p>
+                    <div className="text-xl font-light text-[#503e28] tracking-wide">
+  {product.originalPrice && product.originalPrice > product.price ? (
+    <div className="flex justify-center items-center space-x-2">
+      <span className="text-sm text-gray-400 line-through">
+        ₹{product.originalPrice.toLocaleString()}
+      </span>
+      <span className="text-[#503e28] text-lg font-semibold">
+        ₹{product.price.toLocaleString()}
+      </span>
+    </div>
+  ) : (
+    <span>₹{product.price.toLocaleString()}</span>
+  )}
+</div>
+
                   </div>
                 </div>
               ))}
@@ -262,9 +274,21 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                       {product.name}
                     </h3>
                     
-                    <p className="text-lg font-light text-[#503e28] tracking-wide">
-                     ₹{product.price.toLocaleString()}
-                    </p>
+                    <div className="text-xl font-light text-[#503e28] tracking-wide">
+  {product.originalPrice && product.originalPrice > product.price ? (
+    <div className="flex justify-center items-center space-x-2">
+      <span className="text-sm text-gray-400 line-through">
+        ₹{product.originalPrice.toLocaleString()}
+      </span>
+      <span className="text-[#503e28] text-lg font-semibold">
+        ₹{product.price.toLocaleString()}
+      </span>
+    </div>
+  ) : (
+    <span>₹{product.price.toLocaleString()}</span>
+  )}
+</div>
+
                   </div>
                 </div>
               ))}
