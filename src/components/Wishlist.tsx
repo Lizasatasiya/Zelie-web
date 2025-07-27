@@ -24,7 +24,7 @@ const Wishlist: React.FC<WishlistProps> = ({
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16">
+    <div className="max-w-7xl mx-auto px-4 mt-32 pb-16">
       <button
         onClick={() => navigate('/')}
         className="mb-6 px-4 py-2 text-sm font-medium bg-[#503e28] text-white rounded hover:bg-[#3c2d1e] transition"
@@ -45,7 +45,8 @@ const Wishlist: React.FC<WishlistProps> = ({
               <img
                 src={product.images[0]}
                 alt={product.name}
-                className="w-full h-56 object-cover rounded mb-4"
+                className="w-full h-56 object-cover rounded mb-4 cursor-pointer"
+                onClick={() => onProductClick(product)}
               />
               <h3 className="text-lg font-medium text-gray-800">{product.name}</h3>
               <p className="text-gray-600 mb-2">₹{product.price}</p>
