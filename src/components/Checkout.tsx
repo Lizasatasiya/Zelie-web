@@ -18,6 +18,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     address: '',
     city: '',
     postalCode: '',
+    state:'',
     country: '',
   });
 
@@ -39,13 +40,13 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
   }, []);
 
   const handleRazorpayPayment = async () => {
-    const { mobile, firstName, lastName, address, city, postalCode, country } = form;
+    const { mobile, firstName, lastName, address, city, state, postalCode, country } = form;
     
     // ✅ Manual check before Razorpay opens
     if (
       !/^\d{10}$/.test(mobile) ||
       !firstName.trim() || !lastName.trim() ||
-      !address.trim() || !city.trim() ||
+      !address.trim() || !city.trim() || !state.trim() ||
       !postalCode.trim() || !country
     ) {
       alert('Please fill all fields correctly.');
@@ -55,7 +56,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     setIsProcessing(true);
 
     const options = {
-      key: "rzp_test_HkBH08HUJzewxO", // ✅ Your test key
+      key: "rzp_live_Oc8CdvKp6codkl", // ✅ Your test key
       amount: finalTotal * 100, // in paise
       currency: 'INR',
       name: 'ZeLie',
@@ -67,8 +68,18 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
       },
       prefill: {
         name: `${firstName} ${lastName}`,
-        contact: mobile,
+        contact: form.mobile,
+        email: form.email, // Optional but recommended
       },
+    
+      notes: {
+        address: form.address,     // Collect via form
+        city: form.city,
+        state: form.state,
+        pincode: form.postalCode,
+        
+      },
+    
       theme: {
         color: '#503e28',
       },
@@ -164,6 +175,15 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
                       name="city"
                       placeholder="City"
                       value={form.city}
+                      onChange={handleInputChange}
+                      required
+                      className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
+                    />
+                    <input
+                      type="text"
+                      name="state"
+                      placeholder="State"
+                      value={form.state}
                       onChange={handleInputChange}
                       required
                       className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#503e28]"
