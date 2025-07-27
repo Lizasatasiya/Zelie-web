@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import ProductGrid from './components/ProductGrid';
@@ -13,7 +13,7 @@ import Wishlist from './components/Wishlist';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Orders from './pages/Order';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 
 // Sample product data
@@ -107,20 +107,21 @@ const sampleProducts: Product[] = [
   }
 ];
 
-function App() {
+function AppContent() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showAddToCartMessage, setShowAddToCartMessage] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [wishlist, setWishlist] = useState<string[]>(() => {
     const stored = localStorage.getItem("wishlist");
     return stored ? JSON.parse(stored) : [];
   });
-  const [showAddToCartMessage, setShowAddToCartMessage] = useState(false);
-
 
   const toggleWishlist = (productId: string) => {
     const updated = wishlist.includes(productId)
@@ -145,7 +146,6 @@ function App() {
     setShowAddToCartMessage(true);
     setTimeout(() => setShowAddToCartMessage(false), 2000);
   };
-  
 
   const updateCartQuantity = (productId: number, quantity: number) => {
     if (quantity <= 0) {
@@ -172,6 +172,11 @@ function App() {
   };
 
   const handleCheckout = () => {
+    if (!user) {
+      alert("Please log in to proceed to checkout.");
+      navigate('/login');
+      return;
+    }
     setShowCart(false);
     setShowCheckout(true);
   };
@@ -193,99 +198,100 @@ function App() {
   const categories = ['All'];
 
   return (
+    <div className="min-h-screen bg-white">
+      <div className="bg-[#503e28] text-white text-center text-sm font-semibold py-2">
+        Order above ₹599 for FREE delivery
+      </div>
+
+      <Header
+        cartItemCount={getTotalItems()}
+        onCartClick={() => setShowCart(true)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+      />
+
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <Hero />
+              <ProductGrid
+                products={filteredProducts}
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                onProductClick={setSelectedProduct}
+                onAddToCart={addToCart}
+                wishlist={wishlist}
+                toggleWishlist={toggleWishlist}
+              />
+            </>
+          }
+        />
+        <Route path="/wishlist" element={
+          <Wishlist
+            wishlist={wishlist}
+            products={sampleProducts}
+            onProductClick={setSelectedProduct}
+            toggleWishlist={toggleWishlist}
+            onAddToCart={addToCart}
+          />
+        } />
+        <Route path="/login" element={<div className="mt-32"><Login /></div>} />
+        <Route path="/register" element={<div className="mt-32"><Register /></div>} />
+        <Route path="/orders" element={<div className="mt-32"><Orders /></div>} />
+      </Routes>
+
+      <Footer />
+
+      {showAddToCartMessage && (
+        <div className="fixed bottom-6 right-6 bg-[#503e28] text-white px-4 py-2 rounded shadow-lg z-50 animate-fade-in-out">
+          ✅ Added to cart!
+        </div>
+      )}
+
+      {selectedProduct && (
+        <ProductModal
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAddToCart={addToCart}
+          wishlist={wishlist}
+          toggleWishlist={toggleWishlist}
+        />
+      )}
+
+      {showCart && (
+        <Cart
+          items={cartItems}
+          onClose={() => setShowCart(false)}
+          onUpdateQuantity={updateCartQuantity}
+          onRemoveItem={removeFromCart}
+          onCheckout={handleCheckout}
+          totalPrice={getTotalPrice()}
+        />
+      )}
+
+      {showCheckout && (
+        <Checkout
+          items={cartItems}
+          totalPrice={getTotalPrice()}
+          onClose={() => setShowCheckout(false)}
+          onOrderComplete={handleOrderComplete}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function App() {
+  return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-white">
-          <div className="bg-[#503e28] text-white text-center text-sm font-semibold py-2">
-            Order above ₹599 for FREE delivery
-          </div>
-
-          <Header
-            cartItemCount={getTotalItems()}
-            onCartClick={() => setShowCart(true)}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            wishlist={wishlist}
-            toggleWishlist={toggleWishlist}
-          />
-
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <>
-                  <Hero />
-                  <ProductGrid
-                    products={filteredProducts}
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onCategoryChange={setSelectedCategory}
-                    onProductClick={setSelectedProduct}
-                    onAddToCart={addToCart}
-                    wishlist={wishlist}
-                    toggleWishlist={toggleWishlist}
-                  />
-                </>
-              }
-            />
-            <Route
-              path="/wishlist"
-              element={
-                <Wishlist
-                  wishlist={wishlist}
-                  products={sampleProducts}
-                  onProductClick={setSelectedProduct}
-                  toggleWishlist={toggleWishlist}
-                  onAddToCart={addToCart}
-                />
-              }
-            />
-            <Route path="/login" element={<div className="mt-32"><Login /></div>} />
-<Route path="/register" element={<div className="mt-32"><Register /></div>} />
-<Route path="/orders" element={<div className="mt-32"><Orders /></div>} />
-
-          </Routes>
-
-          <Footer />
-          {showAddToCartMessage && (
-  <div className="fixed bottom-6 right-6 bg-[#503e28] text-white px-4 py-2 rounded shadow-lg z-50 animate-fade-in-out">
-    ✅ Added to cart!
-  </div>
-)}
-
-          {selectedProduct && (
-            <ProductModal
-              product={selectedProduct}
-              onClose={() => setSelectedProduct(null)}
-              onAddToCart={addToCart}
-              wishlist={wishlist}
-              toggleWishlist={toggleWishlist}
-            />
-          )}
-
-          {showCart && (
-            <Cart
-              items={cartItems}
-              onClose={() => setShowCart(false)}
-              onUpdateQuantity={updateCartQuantity}
-              onRemoveItem={removeFromCart}
-              onCheckout={handleCheckout}
-              totalPrice={getTotalPrice()}
-            />
-          )}
-
-          {showCheckout && (
-            <Checkout
-              items={cartItems}
-              totalPrice={getTotalPrice()}
-              onClose={() => setShowCheckout(false)}
-              onOrderComplete={handleOrderComplete}
-            />
-          )}
-        </div>
+        <AppContent />
       </Router>
     </AuthProvider>
   );
 }
-
-export default App;
