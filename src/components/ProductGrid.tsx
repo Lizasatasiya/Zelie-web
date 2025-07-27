@@ -9,7 +9,10 @@ interface ProductGridProps {
   onCategoryChange: (category: string) => void;
   onProductClick: (product: Product) => void;
   onAddToCart: (product: Product) => void;
+  wishlist: string[];
+  toggleWishlist: (productId: string) => void;
 }
+
 
 const ProductGrid: React.FC<ProductGridProps> = ({
   products,
@@ -17,7 +20,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   selectedCategory,
   onCategoryChange,
   onProductClick,
-  onAddToCart
+  onAddToCart,
+  wishlist,
+  toggleWishlist
 }) => {
   const [hoveredProduct, setHoveredProduct] = useState<number | null>(null);
   
@@ -26,7 +31,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   const regularProducts = products.slice(3);
 
   return (
-    <section className="py-20 bg-white">
+    <section id="products" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -61,9 +66,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({
         {/* Best Sellers Section */}
         {bestSellers.length > 0 && (
           <div className="mb-24">
-            <h3 className="text-2xl font-light text-gray-900 mb-12 text-center tracking-wide">
-              Best Sellers
-            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-16 lg:gap-20">
               {bestSellers.map((product, index) => (
                 <div
@@ -103,9 +105,17 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                       <div className={`absolute top-4 right-4 flex flex-col space-y-2 transition-all duration-300 ${
                         hoveredProduct === product.id ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
                       }`}>
-                        <button className="p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-200 hover:scale-110">
-                          <Heart className="w-4 h-4 text-gray-600" />
-                        </button>
+                        <button
+  onClick={() => toggleWishlist(String(product.id))}
+  className="p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+>
+  <Heart
+    className={`w-4 h-4 transition-colors ${
+      wishlist.includes(String(product.id)) ? 'text-red-500 fill-red-500' : 'text-gray-600'
+    }`}
+  />
+</button>
+
                         <button
                           onClick={() => onAddToCart(product)}
                           disabled={!product.inStock}
@@ -114,6 +124,13 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                           <ShoppingBag className="w-4 h-4 text-white" />
                         </button>
                       </div>
+
+                       {/* ✅ Bestseller Label */}
+  {product.bestseller && (
+    <div className="absolute top-2 left-2 bg-yellow-400 text-xs font-semibold text-white px-2 py-1 rounded shadow">
+      Bestseller
+    </div>
+  )}
 
                       {/* Stock Status */}
                       {!product.inStock && (
@@ -150,7 +167,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     </h3>
                     
                     <p className="text-xl font-light text-[#503e28] tracking-wide">
-                      ${product.price.toLocaleString()}
+                     ₹{product.price.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -185,9 +202,17 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     <div className={`absolute top-4 right-4 flex flex-col space-y-2 transition-all duration-300 ${
                       hoveredProduct === product.id ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
                     }`}>
-                      <button className="p-2.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-200 hover:scale-110">
-                        <Heart className="w-4 h-4 text-gray-600" />
-                      </button>
+                      <button
+  onClick={() => toggleWishlist(String(product.id))}
+  className="p-3 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-200 hover:scale-110"
+>
+  <Heart
+    className={`w-4 h-4 transition-colors ${
+      wishlist.includes(String(product.id)) ? 'text-red-500 fill-red-500' : 'text-gray-600'
+    }`}
+  />
+</button>
+
                       <button
                         onClick={() => onAddToCart(product)}
                         disabled={!product.inStock}
@@ -196,6 +221,13 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                         <ShoppingBag className="w-4 h-4 text-white" />
                       </button>
                     </div>
+                     
+                      {/* ✅ Bestseller Label */}
+  {product.bestseller && (
+    <div className="absolute top-2 left-2 bg-yellow-400 text-xs font-semibold text-white px-2 py-1 rounded shadow">
+      Bestseller
+    </div>
+  )}
 
                     {/* Stock Status */}
                     {!product.inStock && (
@@ -231,7 +263,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     </h3>
                     
                     <p className="text-lg font-light text-[#503e28] tracking-wide">
-                      ${product.price.toLocaleString()}
+                     ₹{product.price.toLocaleString()}
                     </p>
                   </div>
                 </div>

@@ -63,7 +63,7 @@ const Cart: React.FC<CartProps> = ({
                         {item.product.name}
                       </h3>
                       <p className="text-[#503e28] font-light text-lg mt-1">
-                        ${item.product.price.toLocaleString()}
+                        ₹{item.product.price.toLocaleString()}
                       </p>
                       
                       {/* Quantity Controls */}
@@ -88,7 +88,7 @@ const Cart: React.FC<CartProps> = ({
                     
                     <div className="text-right space-y-2">
                       <p className="font-light text-gray-900 text-lg">
-                        ${(item.product.price * item.quantity).toLocaleString()}
+                        ₹{(item.product.price * item.quantity).toLocaleString()}
                       </p>
                       <button
                         onClick={() => onRemoveItem(item.product.id)}
@@ -103,20 +103,32 @@ const Cart: React.FC<CartProps> = ({
 
               {/* Order Summary */}
               <div className="border-t border-gray-100 pt-8 space-y-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-light text-gray-900 tracking-wide">Total</span>
-                  <span className="text-3xl font-light text-[#503e28] tracking-wide">
-                    ${totalPrice.toLocaleString()}
-                  </span>
+                <div className="space-y-1 text-right">
+                  {totalPrice < 599 ? (
+                    <>
+                      <p className="text-gray-500 text-sm">Subtotal: ₹{totalPrice}</p>
+                      <p className="text-gray-500 text-sm">Delivery: ₹50</p>
+                      <p className="text-3xl font-light text-[#503e28] tracking-wide">
+                        Total: ₹{totalPrice + 50}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-500 text-sm">Delivery: <span className="text-green-600">FREE</span></p>
+                      <p className="text-3xl font-light text-[#503e28] tracking-wide">
+                        Total: ₹{totalPrice}
+                      </p>
+                    </>
+                  )}
                 </div>
-                
+
                 <button
                   onClick={onCheckout}
                   className="w-full bg-[#503e28] text-white py-4 px-8 font-light tracking-wide hover:bg-[#3d2f1f] transition-all duration-300 hover:scale-105"
                 >
                   Checkout
                 </button>
-                
+
                 <button
                   onClick={onClose}
                   className="w-full text-gray-500 py-3 px-6 font-light hover:text-gray-700 transition-colors tracking-wide"

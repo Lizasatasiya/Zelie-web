@@ -13,14 +13,11 @@ const Footer: React.FC = () => {
               Crafting exquisite jewelry pieces that celebrate life's precious moments with timeless elegance and unmatched quality.
             </p>
             <div className="flex space-x-6">
-              <a href="#" className="text-gray-400 hover:text-[#503e28] transition-colors">
+              <a href="https://www.instagram.com/wearzelie?igsh=cjdkc21wbXF4YTk0" className="text-gray-400 hover:text-[#503e28] transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-[#503e28] transition-colors">
+              <a href="https://www.facebook.com/share/1Aywt4MEgL/" className="text-gray-400 hover:text-[#503e28] transition-colors">
                 <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-[#503e28] transition-colors">
-                <Twitter className="w-5 h-5" />
               </a>
             </div>
           </div>
@@ -29,11 +26,11 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-lg font-light text-gray-900 mb-6 tracking-wide">Shop</h4>
             <ul className="space-y-4 text-gray-600 font-light">
-              <li><a href="#" className="hover:text-[#503e28] transition-colors">Rings</a></li>
+              {/* <li><a href="#" className="hover:text-[#503e28] transition-colors">Rings</a></li> */}
               <li><a href="#" className="hover:text-[#503e28] transition-colors">Necklaces</a></li>
-              <li><a href="#" className="hover:text-[#503e28] transition-colors">Earrings</a></li>
-              <li><a href="#" className="hover:text-[#503e28] transition-colors">Bracelets</a></li>
-              <li><a href="#" className="hover:text-[#503e28] transition-colors">Collections</a></li>
+              {/* <li><a href="#" className="hover:text-[#503e28] transition-colors">Earrings</a></li> */}
+              {/* <li><a href="#" className="hover:text-[#503e28] transition-colors">Bracelets</a></li> */}
+              {/* <li><a href="#" className="hover:text-[#503e28] transition-colors">Collections</a></li> */}
             </ul>
           </div>
 
@@ -43,15 +40,16 @@ const Footer: React.FC = () => {
             <div className="space-y-4 text-gray-600 font-light">
               <div className="flex items-start space-x-3">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-1" />
-                <span className="text-sm">123 Jewelry Lane<br />Diamond District, NY 10001</span>
+                <span className="text-sm">Gandhinagar<br />Gujarat</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm">+1 (555) 123-4567</span>
+                <span className="text-sm">+91 7984194161</span>
+                <span className="text-sm">+91 6351026516</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 flex-shrink-0" />
-                <span className="text-sm">hello@zelie.com</span>
+                <span className="text-sm">wearzelie1102@gmail.com</span>
               </div>
             </div>
           </div>

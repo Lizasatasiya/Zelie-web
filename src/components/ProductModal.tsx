@@ -6,9 +6,14 @@ interface ProductModalProps {
   product: Product;
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number) => void;
+  wishlist: string[];
+  toggleWishlist: (productId: string) => void;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onAddToCart }) => {
+
+
+const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onAddToCart, wishlist,
+  toggleWishlist }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
@@ -122,7 +127,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onAddToCa
               {/* Price */}
               <div className="py-4">
                 <span className="text-4xl font-light text-[#503e28] tracking-wide">
-                  ${product.price.toLocaleString()}
+                  ₹{product.price.toLocaleString()}
                 </span>
               </div>
 
@@ -162,9 +167,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onAddToCa
                   <ShoppingBag className="w-5 h-5" />
                   <span>{product.inStock ? 'Add to Cart' : 'Out of Stock'}</span>
                 </button>
-                <button className="p-4 border border-gray-200 hover:border-[#503e28] hover:text-[#503e28] transition-colors rounded-lg">
-                  <Heart className="w-5 h-5" />
-                </button>
+                <button
+  onClick={() => toggleWishlist(String(product.id))}
+  className={`p-4 border rounded-lg transition-colors ${
+    wishlist.includes(String(product.id))
+      ? 'border-red-500 text-red-500'
+      : 'border-gray-200 hover:border-[#503e28] hover:text-[#503e28]'
+  }`}
+>
+  <Heart
+    className={`w-5 h-5 ${
+      wishlist.includes(String(product.id)) ? 'fill-red-500 text-red-500' : ''
+    }`}
+  />
+</button>
+
               </div>
 
               {/* Product Features */}
@@ -173,19 +190,15 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose, onAddToCa
                 <ul className="space-y-3 text-sm text-gray-600 font-light">
                   <li className="flex items-center space-x-3">
                     <div className="w-1 h-1 bg-[#503e28] rounded-full"></div>
-                    <span>Handcrafted with premium materials</span>
+                    <span>Anti-tarnish coating to retain shine and prevent dullness</span>
                   </li>
                   <li className="flex items-center space-x-3">
                     <div className="w-1 h-1 bg-[#503e28] rounded-full"></div>
-                    <span>Lifetime craftsmanship warranty</span>
+                    <span>Premium materials that are durable and skin-friendly</span>
                   </li>
                   <li className="flex items-center space-x-3">
                     <div className="w-1 h-1 bg-[#503e28] rounded-full"></div>
-                    <span>Free shipping and returns</span>
-                  </li>
-                  <li className="flex items-center space-x-3">
-                    <div className="w-1 h-1 bg-[#503e28] rounded-full"></div>
-                    <span>Gift wrapping available</span>
+                    <span>Elegant reusable packaging for gifting or storage</span>
                   </li>
                 </ul>
               </div>
