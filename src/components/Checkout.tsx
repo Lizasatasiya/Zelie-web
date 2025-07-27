@@ -32,7 +32,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
   const { showPopup } = usePopup();
 
   const shipping = totalPrice >= 599 ? 0 : 50;
-  const finalTotal = totalPrice; // not adding shipping
+  const finalTotal = totalPrice + shipping; 
 
   useEffect(() => {
     const script = document.createElement('script');
