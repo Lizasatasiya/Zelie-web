@@ -1,10 +1,10 @@
-// src/components/Checkout.tsx
 import React, { useState, useEffect } from 'react';
 import { X, Lock } from 'lucide-react';
 import { CartItem, CheckoutForm } from '../types';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import emailjs from 'emailjs-com';
 
 interface CheckoutProps {
   items: CartItem[];
@@ -30,7 +30,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
   const { user } = useAuth();
 
   const shipping = totalPrice >= 599 ? 0 : 50;
-  const finalTotal = totalPrice //+ shipping;
+  const finalTotal = totalPrice + shipping;
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -45,7 +45,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
   };
 
   const handleRazorpayPayment = async () => {
-    const { mobile, firstName, lastName, address, city, state, postalCode, country } = form;
+    const { mobile, firstName, lastName, address, city, state, postalCode, country, email } = form;
 
     if (!/^\d{10}$/.test(mobile) || !firstName || !lastName || !address || !city || !state || !postalCode || !country) {
       alert('Please fill all fields correctly.');
@@ -55,7 +55,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     setIsProcessing(true);
 
     const options = {
-      key: 'rzp_live_Oc8CdvKp6codkl', // Replace with your Razorpay key
+      key: 'rzp_live_Oc8CdvKp6codkl',
       amount: finalTotal * 100,
       currency: 'INR',
       name: 'ZeLie',
@@ -63,7 +63,12 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
       handler: async function (response: any) {
         if (!user) return alert('User not logged in.');
 
+        const productDetails = items.map((item) =>
+          `• ${item.product.name} (ID: ${item.product.id}) — ₹${item.product.price} × ${item.quantity}`
+        ).join('\n');
+
         try {
+          // 1. Store order in Firestore
           const orderRef = collection(db, 'users', user.uid, 'orders');
           await addDoc(orderRef, {
             items: items.map((item) => ({
@@ -78,11 +83,26 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
             paymentId: response.razorpay_payment_id,
           });
 
-          alert('Payment successful and order saved!');
+          // 2. Send Email using EmailJS
+          await emailjs.send(
+            'service_g2k5w9s',        // ✅ Your EmailJS Service ID
+            'template_azqrd6r',        // ✅ Your EmailJS Template ID
+            {
+              customer_name: `${firstName} ${lastName}`,
+              email: email,
+              payment_id: response.razorpay_payment_id,
+              order_summary: productDetails,
+              total: `₹${finalTotal.toLocaleString()}`,
+              shipping_address: `${address}, ${city}, ${state}, ${postalCode}, ${country}`,
+            },
+            'D0X0CFJnVlt3w3spQ'           // ✅ Your EmailJS Public Key (User ID)
+          );
+
+          alert('Payment successful and confirmation email sent!');
           onOrderComplete();
         } catch (error) {
-          console.error('Error saving order:', error);
-          alert('Payment succeeded but failed to save order.');
+          console.error('Error saving order or sending email:', error);
+          alert('Payment succeeded but failed to save order or send email.');
         }
       },
       prefill: {
@@ -105,6 +125,20 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
     setIsProcessing(false);
   };
 
+  if (!user) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl p-8 max-w-md w-full text-center">
+          <h2 className="text-xl font-semibold text-red-600 mb-4">Login Required</h2>
+          <p className="text-gray-700 mb-6">Please log in to complete your purchase.</p>
+          <a href="/login" className="text-white bg-[#503e28] hover:bg-[#3d2f1f] px-6 py-3 rounded-md transition">
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -121,12 +155,8 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
             <form className="space-y-6">
               <div>
                 <h3 className="font-semibold mb-4">Contact Information</h3>
-                <input type="tel" name="mobile" placeholder="Mobile number" value={form.mobile}
-                  onChange={handleInputChange} required maxLength={10}
-                  className="w-full mb-4 px-4 py-3 border rounded-lg" />
-                <input type="email" name="email" placeholder="Email" value={form.email}
-                  onChange={handleInputChange} required
-                  className="w-full px-4 py-3 border rounded-lg" />
+                <input name="mobile" type="tel" placeholder="Mobile number" value={form.mobile} onChange={handleInputChange} required maxLength={10} className="w-full mb-4 px-4 py-3 border rounded-lg" />
+                <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleInputChange} required className="w-full px-4 py-3 border rounded-lg" />
               </div>
 
               <div>
@@ -182,7 +212,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
             </div>
           </div>
         </div>
-      </div>  
+      </div>
     </div>
   );
 };

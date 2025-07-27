@@ -34,7 +34,7 @@ const sampleProducts: Product[] = [
   {
     id: 2,
     name: "Dill Blink ",
-    price: 279,
+    price: 1,
     originalPrice: 299,
     images: getProductImages("DilBlink"),
     description: "✨ Dil Blink – When the Heart Sparkles.",
