@@ -16,6 +16,7 @@ import { PopupProvider, usePopup } from './contexts/PopupContext';
 import { Product, CartItem } from './types';
 import { getProductImages } from './utils/getProductImages';
 import PopupMessage from './components/PopupMessage'; // Optional if you modularized it
+import RakhiDiscountPopup from './components/RakhiDiscountPopup';
 
 const sampleProducts: Product[] = [
   {
@@ -340,6 +341,7 @@ const sampleProducts: Product[] = [
 ];
 
 function AppContent() {
+  const [showRakhiPopup, setShowRakhiPopup] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
@@ -363,7 +365,7 @@ function AppContent() {
     setWishlist(updated);
     localStorage.setItem("wishlist", JSON.stringify(updated));
   };
-
+  
   const addToCart = (product: Product, quantity: number = 1) => {
     setCartItems(prev => {
       const existingItem = prev.find(item => item.product.id === product.id);
@@ -435,7 +437,7 @@ function AppContent() {
       <div className="bg-[#503e28] text-white text-center text-sm font-semibold py-2">
         Order above ₹599 for FREE delivery
       </div>
-
+      {showRakhiPopup && <RakhiDiscountPopup onClose={() => setShowRakhiPopup(false)} />}
       <Header
         cartItemCount={getTotalItems()}
         onCartClick={() => setShowCart(true)}
@@ -512,7 +514,7 @@ function AppContent() {
           onOrderComplete={handleOrderComplete}
         />
       )}
-
+ 
       {/* Global Popup message from context */}
       <PopupMessage />
     </div>
