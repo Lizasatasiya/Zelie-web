@@ -31,8 +31,14 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
   const { user } = useAuth();
   const { showPopup } = usePopup();
 
-  const shipping = totalPrice >= 599 ? 0 : 50;
-  const finalTotal = totalPrice + shipping; 
+const discount = totalPrice * 0.10;
+const discountedTotal = totalPrice - discount;
+
+// Determine shipping after discount
+const shipping = totalPrice >= 599 ? 0 : 50;
+
+// Final total = discounted price + shipping
+const finalTotal = discountedTotal + shipping;
 
   useEffect(() => {
     const script = document.createElement('script');
