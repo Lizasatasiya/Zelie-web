@@ -34,10 +34,11 @@ const Checkout: React.FC<CheckoutProps> = ({ items, totalPrice, onClose, onOrder
 const discount = totalPrice * 0.10;
 const discountedTotal = totalPrice - discount;
 
-// ✅ Use discountedTotal to decide on shipping
+// Shipping based on discounted total
 const shipping = discountedTotal < 599 ? 50 : 0;
 
-const finalTotal = discountedTotal + shipping;
+// Final total, rounded to nearest rupee
+const finalTotal = Math.round(discountedTotal + shipping);
 
 
 
